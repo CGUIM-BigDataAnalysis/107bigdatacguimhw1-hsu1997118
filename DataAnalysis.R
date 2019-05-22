@@ -1,5 +1,7 @@
 library(dplyr)
 library(readr)
+library(knitr)
+
 
 X103educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/103年各教育程度薪資分.csv")
 X104educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/104年各教育程度薪資分.csv")

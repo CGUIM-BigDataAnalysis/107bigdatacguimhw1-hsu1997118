@@ -10,7 +10,8 @@
 ### 資料匯入與處理
 
 ``` r
-library(knitr)
+#利用readr()套件讀取csv檔
+library(readr)
 library(dplyr)
 ```
 
@@ -26,8 +27,8 @@ library(dplyr)
     ##     intersect, setdiff, setequal, union
 
 ``` r
-#利用readr()套件讀取csv檔
-library(readr)
+library(knitr)
+
 #讀取103年度各教育程度別初任人員的薪資資料
 X103educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/103年各教育程度薪資分.csv")
 ```
@@ -309,116 +310,70 @@ kable(SUM%>% group_by(Occupation) %>% summarise(Count=n()) %>% arrange(desc(Coun
     -   男女薪資比例看法：
         -   女薪資/男薪資\*100 &gt; 100 則是女性薪資**&gt;**男性薪資
         -   女薪資/男薪資\*100 &lt; 100 則是女性薪資**&lt;**男性薪資
-    -   Step1: 建立一個新的資料表，名稱為SexRatio，將職業類別和103~106年度的的大學薪資男女比例放入其中
-    -   Step2: 將一個資料表中的字串放到新的資料表中時，character會被轉成factor。所以要用**stringAsFactors=FALSE**才能確保資料型態為character
-    -   Step3: 在SexRatio資料表中新增一個名稱為Average的新欄位，將103~106年度的的大學薪資男女比例平均起來
+    -   Step1: 利用rbind建立一個103~106年的薪資對照表，名稱為bind103\_106
+    -   Step2: 再建立一個名稱為SexRatio的資料表，欄位包含Year（各年）、Occupation（職業）、SexRatio（薪資性別比）
+    -   Step3: 將一個資料表中的字串放到新的資料表中時，character會被轉成factor。所以要用**stringAsFactors=FALSE**才能確保資料型態為character
 
 ``` r
-SexRatio<- data.frame(Occupation=X106educate_salary$Occupation,
-                      College103SexRatio=X103educate_salary$College_Salary_Gender,
-                      College104SexRatio=X104educate_salary$College_Salary_Gender,
-                      College105SexRatio=X105educate_salary$College_Salary_Gender,
-                      College106SexRatio=X106educate_salary$College_Salary_Gender, 
-                      stringsAsFactors = FALSE)
-
-SexRatio$Average<-(SexRatio$College103SexRatio+SexRatio$College104SexRatio+
-                   SexRatio$College105SexRatio+SexRatio$College106SexRatio)/4
+bind103_106<- rbind(X103educate_salary,X104educate_salary,
+                    X105educate_salary,X106educate_salary)
+SexRatio<-data.frame(Year=bind103_106$Year,Occupation=bind103_106$Occupation,
+                         SexRatio=bind103_106$College_Salary_Gender,
+                         stringsAsFactors = FALSE)
 ```
 
 ### 103到106年度的大學畢業薪資資料，哪些行業男生薪資比女生薪資多?
 
 -   程式碼說明＆步驟：
-    -   Step1: 用filter()篩選出103~106年度男女薪資比例的平均（Average欄位）
+    -   Step1: 用filter()篩選出103~106年度男女薪資比例。要篩選SexRatio小於100的資料
     -   Step2: 再用select()選出要顯示的欄位
-    -   Step3: 再用用arrange()由**小到大**排序，**比例數值越小男性薪資越高於女性** -以Average欄位來做排序
+    -   Step3: 再用用arrange()由**小到大**排序，**比例數值越小男性薪資越高於女性**
     -   Step4: 最後用head()顯示出差距越大的前10項職業
 -   執行結果：
     -   可觀察到「礦業及土石採取業-技藝\_機械設備操作及組裝人員」、「電力及燃氣供應業-技藝\_機械設備操作及組裝人員」...等較需**「體力、 勞動力」**的職業，男性薪資比女性薪資來的高最多
 
 ``` r
-kable(SexRatio %>% 
-      filter(Average<100) %>%
-      select(Occupation,Average,College103SexRatio,College104SexRatio,College105SexRatio,College106SexRatio) %>%
-      arrange(Average) %>% 
-      head(10))
+ kable(SexRatio %>%
+       filter(SexRatio<100) %>% 
+       select(Year,Occupation,SexRatio) %>% 
+       arrange(SexRatio) %>% 
+       head(10))
 ```
 
-| Occupation                                    |  Average|  College103SexRatio|  College104SexRatio|  College105SexRatio|  College106SexRatio|
-|:----------------------------------------------|--------:|-------------------:|-------------------:|-------------------:|-------------------:|
-| 礦業及土石採取業-技藝\_機械設備操作及組裝人員 |  93.5400|               84.97|               93.10|               99.18|               96.91|
-| 電力及燃氣供應業-技藝\_機械設備操作及組裝人員 |  94.2925|               91.77|               91.69|               98.20|               95.51|
-| 營造業                                        |  96.1050|               95.58|               96.35|               95.78|               96.71|
-| 其他服務業-技術員及助理專業人員               |  96.1275|               89.36|               98.94|               99.37|               96.84|
-| 其他服務業                                    |  96.5850|               96.21|               96.84|               96.72|               96.57|
-| 其他服務業-事務支援人員                       |  96.6100|               97.26|               95.47|               97.48|               96.23|
-| 礦業及土石採取業                              |  96.6650|               96.27|               95.28|               97.70|               97.41|
-| 教育服務業-服務及銷售工作人員                 |  96.8950|               98.15|               91.90|              100.00|               97.53|
-| 運輸及倉儲業-事務支援人員                     |  96.9550|               97.15|               96.95|               96.89|               96.83|
-| 營造業-事務支援人員                           |  97.0850|               97.11|               98.12|               95.65|               97.46|
+|  Year| Occupation                                    |  SexRatio|
+|-----:|:----------------------------------------------|---------:|
+|  2014| 礦業及土石採取業-技藝、機械設備操作及組裝人員 |     84.97|
+|  2014| 教育服務業-技藝、機械設備操作及組裝人員       |     88.49|
+|  2014| 其他服務業-技術員及助理專業人員               |     89.36|
+|  2016| 不動產業-技藝、機械設備操作及組裝人員         |     91.38|
+|  2015| 電力及燃氣供應業-技藝、機械設備操作及組裝人員 |     91.69|
+|  2014| 電力及燃氣供應業-技藝、機械設備操作及組裝人員 |     91.77|
+|  2015| 教育服務業-服務及銷售工作人員                 |     91.90|
+|  2015| 礦業及土石採取業-技術員及助理專業人員         |     92.42|
+|  2014| 礦業及土石採取業-服務及銷售工作人員           |     92.57|
+|  2015| 礦業及土石採取業-技藝、機械設備操作及組裝人員 |     93.10|
 
 ### 哪些行業女生薪資比男生薪資多?
 
--   方法ㄧ:
-    -   程式碼說明＆步驟：
-        -   Step1: 用filter()篩選出103~106年度男女薪資比例符合欄位Average&gt;100條件的觀察值
-        -   Step2: 用select()選出要顯示的欄位
-        -   Step3: 用arrange()由**大到小**排序，比例數值越大女性薪資越高於男性
-        -   Step4: 用head()顯示出差距越大的前10項職業
-    -   執行結果：
-        -   會發現如果用平均（Average欄位）來看，並沒有一個職業的女性薪資高於男性
+-   程式碼說明＆步驟：
+    -   Step1: 用filter()篩選出103~106年度男女薪資比例。要篩選SexRatio大於100的資料
+    -   Step2: 用select()選出要顯示的欄位
+    -   Step3: 用arrange()由**大到小**排序，比例數值越大女性薪資越高於男性
+    -   Step4: 用head()顯示出差距越大的前10項職業
+-   執行結果：
+    -   可看出女性薪資大於男性的薪資的職業並不多。只有三個「資訊及通訊傳播業-服務及銷售工作人員」、「專業\_科學及技術服務業-技藝\_機械設備操作及組裝人員」、「金融及保險業-專業人員」
 
 ``` r
-#方法一：用Average會沒有符合條件的職業
-kable(SexRatio %>% 
-      filter(Average >100) %>%
-      select(Occupation,Average,College103SexRatio,College104SexRatio,
-             College105SexRatio,College106SexRatio) %>%
-      arrange(desc(Average)))
+kable(filter(SexRatio,SexRatio >100)%>% 
+       select(Year,Occupation,SexRatio)%>% 
+       arrange(desc(SexRatio)))
 ```
 
-<table>
-<colgroup>
-<col width="11%" />
-<col width="8%" />
-<col width="19%" />
-<col width="19%" />
-<col width="19%" />
-<col width="19%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">Occupation</th>
-<th align="right">Average</th>
-<th align="right">College103SexRatio</th>
-<th align="right">College104SexRatio</th>
-<th align="right">College105SexRatio</th>
-<th align="right">College106SexRatio</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
--   方法二:
-    -   程式碼說明＆步驟：
-        -   Step1: 用subset()去來指定篩選條件
-        -   Step2: 篩選符合103年中薪資性別比&gt;100**或**104年中薪資性別比&gt;100**或**105年中薪資性別比&gt;100**或**106年中薪資性別比&gt;100的資料
-        -   Step3: 用arrange()排序，利用**desc()**由**大到小**排序
-    -   執行結果：
-        -   用此種篩選方式會發現105年的「金融及保險業-專業人員」、106年的「資訊及通訊傳播業-服務及銷售工作人員」、104年的「專業、科學及技術服務業-技藝\_機械設備操作及組裝人員」女性薪資高於男性
-
-``` r
-#方法二：用subset去篩每年薪資比例大於100的職業。可以篩選出有哪一年哪一個職業女性薪資大於男性
-kable(subset(SexRatio,College103SexRatio>100 | College104SexRatio>100 |
-             College105SexRatio>100 | College106SexRatio>100) %>%
-      arrange(desc(College103SexRatio),College104SexRatio,College105SexRatio,College106SexRatio))
-```
-
-| Occupation                                          |  College103SexRatio|  College104SexRatio|  College105SexRatio|  College106SexRatio|  Average|
-|:----------------------------------------------------|-------------------:|-------------------:|-------------------:|-------------------:|--------:|
-| 金融及保險業-專業人員                               |               99.91|               99.28|              100.11|               99.47|  99.6925|
-| 資訊及通訊傳播業-服務及銷售工作人員                 |               98.79|               99.59|               97.05|              100.33|  98.9400|
-| 專業\_科學及技術服務業-技藝\_機械設備操作及組裝人員 |               97.67|              100.26|               99.83|              100.00|  99.4400|
+|  Year| Occupation                                          |  SexRatio|
+|-----:|:----------------------------------------------------|---------:|
+|  2017| 資訊及通訊傳播業-服務及銷售工作人員                 |    100.33|
+|  2015| 專業、科學及技術服務業-技藝、機械設備操作及組裝人員 |    100.26|
+|  2016| 金融及保險業-專業人員                               |    100.11|
 
 研究所薪資差異
 --------------
@@ -427,7 +382,8 @@ kable(subset(SexRatio,College103SexRatio>100 | College104SexRatio>100 |
 
 ``` r
 #建立一個資料表，存106年度的資料
-New106educate_salary<-data.frame(Occupation=X106educate_salary$Occupation,
+New106educate_salary<-data.frame(Year=X106educate_salary$Year,
+                                 Occupation=X106educate_salary$Occupation,
                                  College_Salary=X106educate_salary$College_Salary,
                                  Master_Salary=X106educate_salary$Master_Salary,
                                  stringsAsFactors = FALSE)
@@ -449,18 +405,18 @@ kable(New106educate_salary %>%
       head(10))
 ```
 
-| Occupation                          |  College\_Salary|  Master\_Salary|  MasterDevideCollege|
-|:------------------------------------|----------------:|---------------:|--------------------:|
-| 礦業及土石採取業-事務支援人員       |            24815|           30000|             1.208946|
-| 專業\_科學及技術服務業              |            29648|           35666|             1.202982|
-| 其他服務業-技術員及助理專業人員     |            27929|           33500|             1.199470|
-| 專業\_科學及技術服務業-事務支援人員 |            27035|           32234|             1.192306|
-| 批發及零售業                        |            27611|           32910|             1.191916|
-| 製造業                              |            28155|           33458|             1.188350|
-| 藝術\_娛樂及休閒服務業-事務支援人員 |            24970|           29657|             1.187705|
-| 工業部門                            |            28263|           33448|             1.183455|
-| 工業及服務業部門                    |            28446|           33633|             1.182346|
-| 服務業部門                          |            28715|           33922|             1.181334|
+|  Year| Occupation                          |  College\_Salary|  Master\_Salary|  MasterDevideCollege|
+|-----:|:------------------------------------|----------------:|---------------:|--------------------:|
+|  2017| 礦業及土石採取業-事務支援人員       |            24815|           30000|             1.208946|
+|  2017| 專業\_科學及技術服務業              |            29648|           35666|             1.202982|
+|  2017| 其他服務業-技術員及助理專業人員     |            27929|           33500|             1.199470|
+|  2017| 專業\_科學及技術服務業-事務支援人員 |            27035|           32234|             1.192306|
+|  2017| 批發及零售業                        |            27611|           32910|             1.191916|
+|  2017| 製造業                              |            28155|           33458|             1.188350|
+|  2017| 藝術\_娛樂及休閒服務業-事務支援人員 |            24970|           29657|             1.187705|
+|  2017| 工業部門                            |            28263|           33448|             1.183455|
+|  2017| 工業及服務業部門                    |            28446|           33633|             1.182346|
+|  2017| 服務業部門                          |            28715|           33922|             1.181334|
 
 我有興趣的職業別薪資狀況分析
 ----------------------------
@@ -481,34 +437,34 @@ kable(New106educate_salary %>%
 ##有興趣的職業1.「專業_科學及技術服務業-專業人員」
 
 kable(filter(X106educate_salary,Occupation=="專業_科學及技術服務業-專業人員") %>% 
-      select(Occupation,College_Salary,Master_Salary))
+      select(Year,Occupation,College_Salary,Master_Salary))
 ```
 
-| Occupation                      |  College\_Salary| Master\_Salary |
-|:--------------------------------|----------------:|:---------------|
-| 專業\_科學及技術服務業-專業人員 |            33384| 38415          |
+|  Year| Occupation                      |  College\_Salary| Master\_Salary |
+|-----:|:--------------------------------|----------------:|:---------------|
+|  2017| 專業\_科學及技術服務業-專業人員 |            33384| 38415          |
 
 ``` r
 ##有興趣的職業2.「資訊及通訊傳播業-專業人員」
 
 kable(filter(X106educate_salary,Occupation=="資訊及通訊傳播業-專業人員") %>% 
-      select(Occupation,College_Salary,Master_Salary))
+      select(Year,Occupation,College_Salary,Master_Salary))
 ```
 
-| Occupation                |  College\_Salary| Master\_Salary |
-|:--------------------------|----------------:|:---------------|
-| 資訊及通訊傳播業-專業人員 |            31817| 36545          |
+|  Year| Occupation                |  College\_Salary| Master\_Salary |
+|-----:|:--------------------------|----------------:|:---------------|
+|  2017| 資訊及通訊傳播業-專業人員 |            31817| 36545          |
 
 ``` r
 ##有興趣的職業3.「金融及保險業-專業人員」
 
 kable(filter(X106educate_salary,Occupation=="金融及保險業-專業人員") %>% 
-      select(Occupation,College_Salary,Master_Salary))
+      select(Year,Occupation,College_Salary,Master_Salary))
 ```
 
-| Occupation            |  College\_Salary| Master\_Salary |
-|:----------------------|----------------:|:---------------|
-| 金融及保險業-專業人員 |            33646| 38542          |
+|  Year| Occupation            |  College\_Salary| Master\_Salary |
+|-----:|:----------------------|----------------:|:---------------|
+|  2017| 金融及保險業-專業人員 |            33646| 38542          |
 
 ### 這些職業別研究所薪資與大學薪資差多少呢？
 
@@ -519,34 +475,34 @@ kable(filter(X106educate_salary,Occupation=="金融及保險業-專業人員") %
 ##有興趣的職業1. 「專業_科學及技術服務業-專業人員」
 
 kable(filter(X106educate_salary,Occupation=="專業_科學及技術服務業-專業人員") %>% 
-             select(Occupation,College_Salary,Master_Salary) %>% 
-             mutate(`Master-Bachelor`=as.numeric(Master_Salary)-as.numeric(College_Salary)))
+      select(Year,Occupation,College_Salary,Master_Salary) %>% 
+      mutate(`Master-Bachelor`=as.numeric(Master_Salary)-as.numeric(College_Salary)))
 ```
 
-| Occupation                      |  College\_Salary| Master\_Salary |  Master-Bachelor|
-|:--------------------------------|----------------:|:---------------|----------------:|
-| 專業\_科學及技術服務業-專業人員 |            33384| 38415          |             5031|
+|  Year| Occupation                      |  College\_Salary| Master\_Salary |  Master-Bachelor|
+|-----:|:--------------------------------|----------------:|:---------------|----------------:|
+|  2017| 專業\_科學及技術服務業-專業人員 |            33384| 38415          |             5031|
 
 ``` r
 ##有興趣的職業2. 「資訊及通訊傳播業-專業人員」
 
 kable(filter(X106educate_salary,Occupation=="資訊及通訊傳播業-專業人員") %>% 
-             select(Occupation,College_Salary,Master_Salary) %>%
-             mutate(`Master-Bachelor`=as.numeric(Master_Salary)-as.numeric(College_Salary)))
+      select(Year,Occupation,College_Salary,Master_Salary) %>%
+      mutate(`Master-Bachelor`=as.numeric(Master_Salary)-as.numeric(College_Salary)))
 ```
 
-| Occupation                |  College\_Salary| Master\_Salary |  Master-Bachelor|
-|:--------------------------|----------------:|:---------------|----------------:|
-| 資訊及通訊傳播業-專業人員 |            31817| 36545          |             4728|
+|  Year| Occupation                |  College\_Salary| Master\_Salary |  Master-Bachelor|
+|-----:|:--------------------------|----------------:|:---------------|----------------:|
+|  2017| 資訊及通訊傳播業-專業人員 |            31817| 36545          |             4728|
 
 ``` r
 ##有興趣的職業3. 「金融及保險業-專業人員」
 
 kable(filter(X106educate_salary,Occupation=="金融及保險業-專業人員") %>% 
-      select(Occupation,College_Salary,Master_Salary) %>%
+      select(Year,Occupation,College_Salary,Master_Salary) %>%
       mutate(`Master-Bachelor`=as.numeric(Master_Salary)-as.numeric(College_Salary)))
 ```
 
-| Occupation            |  College\_Salary| Master\_Salary |  Master-Bachelor|
-|:----------------------|----------------:|:---------------|----------------:|
-| 金融及保險業-專業人員 |            33646| 38542          |             4896|
+|  Year| Occupation            |  College\_Salary| Master\_Salary |  Master-Bachelor|
+|-----:|:----------------------|----------------:|:---------------|----------------:|
+|  2017| 金融及保險業-專業人員 |            33646| 38542          |             4896|
