@@ -1,13 +1,16 @@
 library(dplyr)
 library(readr)
 library(knitr)
-
+install.packages("magrittr")
+library(magrittr)
 
 X103educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/103年各教育程度薪資分.csv")
 X104educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/104年各教育程度薪資分.csv")
 X105educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/105年各教育程度薪資分.csv")
 X106educate_salary <- read_csv("~/Downloads/A17000000J-020066-Qod/106年各教育程度薪資分.csv")
-
+X103educate_salary$Occupation <-X106educate_salary$Occupation
+X104educate_salary$Occupation <-X106educate_salary$Occupation
+X105educate_salary$Occupation <-X106educate_salary$Occupation
 colnames(X103educate_salary) <- c("Year","Occupation","Regular_Salary","Regular_Salary_Gender",
                                   "Middle_School_Salary","Middle_School_Salary_Gender","Senior_High_Salary",
                                   "Senior_High_Salary_Gender","Junior_College_Salary","Junior_College_Salary_Gender",
@@ -57,28 +60,18 @@ SUM%>% group_by(Occupation) %>% summarise(Count=n())
 table(occupation_cat)
 
 #2.
+
 X103educate_salary$College_Salary_Gender<-as.numeric(X103educate_salary$College_Salary_Gender)
 X104educate_salary$College_Salary_Gender<-as.numeric(X104educate_salary$College_Salary_Gender)
 X105educate_salary$College_Salary_Gender<-as.numeric(X105educate_salary$College_Salary_Gender)
 X106educate_salary$College_Salary_Gender<-as.numeric(X106educate_salary$College_Salary_Gender)
 
-SexRatio<- data.frame(Occupation=X106educate_salary$Occupation,
-                      College103SexRatio=X103educate_salary$College_Salary_Gender,
-                      College104SexRatio=X104educate_salary$College_Salary_Gender,
-                      College105SexRatio=X105educate_salary$College_Salary_Gender,
-                      College106SexRatio=X106educate_salary$College_Salary_Gender, 
-                      stringsAsFactors = FALSE)
+bind103_106<- rbind(X103educate_salary,X104educate_salary,X105educate_salary,X106educate_salary)
+SexRatio<-data.frame(Year=bind103_106$Year,Occupation=bind103_106$Occupation,SexRatio=bind103_106$College_Salary_Gender,
+                         stringsAsFactors = FALSE)
 
-SexRatio$Average<-(SexRatio$College103SexRatio+SexRatio$College104SexRatio+
-                     SexRatio$College105SexRatio+SexRatio$College106SexRatio)/4
-
-SexRatio %>% filter(Average >100) %>%
-select(Occupation,Average,College103SexRatio,College104SexRatio,College105SexRatio,College106SexRatio) %>% arrange(desc(Average))
-
-
-SexRatio %>% filter(Average<100) %>%
-       select(Occupation,Average,College103SexRatio,College104SexRatio,College105SexRatio,College106SexRatio) %>% arrange(Average)
-
+filter(SexRatio,SexRatio >100)%>% select(Year,Occupation,SexRatio)%>% arrange(desc(SexRatio))
+remove(SexRatio_New)
 #3.
 New106educate_salary<-X106educate_salary
 New106educate_salary$MasterDevideCollege<- New106educate_salary$Master_Salary/New106educate_salary$College_Salary

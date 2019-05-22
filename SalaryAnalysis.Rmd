@@ -93,7 +93,7 @@ kable(head(CollegeSalary103_106,10))
 ```{r compare103106,echo=TRUE}
 compare103106<- CollegeSalary103_106 %>% 
                 filter(Devide106By103>=1) %>% 
-                select(Occupation,CollegeSalary103,CollegeSalary106,Devide106By103) %>% 
+                select(Devide106By103,Occupation,CollegeSalary103,CollegeSalary106) %>% 
                 arrange(desc(Devide106By103)) 
 kable(head(compare103106,10))
 ```
@@ -265,9 +265,6 @@ kable(filter(X106educate_salary,Occupation=="金融及保險業-專業人員") %
 
 ### 這些職業別研究所薪資與大學薪資差多少呢？
 
-- 執行結果說明：
-    - 觀察**Master-Bachelor**欄位可發現我所感興趣的職業類別，研究所畢業和大學畢業的薪資大約差了5000元。這個差距雖然比我預期來的小，但這個結果**並不會改變我未來是否要讀研究所的決定**。
-
 ```{r likeGrad}
 ##有興趣的職業1. 「專業_科學及技術服務業-專業人員」
 
@@ -288,3 +285,5 @@ kable(filter(X106educate_salary,Occupation=="金融及保險業-專業人員") %
       mutate(`Master-Bachelor`=as.numeric(Master_Salary)-as.numeric(College_Salary)))
 ```
 
+- 執行結果說明：
+    - 觀察**Master-Bachelor**欄位可發現我所感興趣的職業類別，研究所畢業和大學畢業的薪資大約差了5000元。這個差距雖然比我預期來的小，但這個結果**並不會改變我未來是否要讀研究所的決定**。
